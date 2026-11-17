@@ -1,0 +1,17 @@
+{
+  "as_of": "2026-11-17",
+  "public_repos": 8,
+  "commits": 88,
+  "joined": "2026-09",
+  "podcast_episodes": 32,
+  "languages": {
+    "Jupyter Notebook": 1554948,
+    "Python": 543596,
+    "HTML": 542815,
+    "TypeScript": 89587,
+    "JavaScript": 37910,
+    "Shell": 7525,
+    "PLpgSQL": 5839,
+    "CSS": 4304
+  }
+}

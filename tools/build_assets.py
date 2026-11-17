@@ -39,6 +39,7 @@ ORANGE = "#ff9f43"
 LAV = "#c9b8ff"      # body text lavender
 DIM = "#7d6aa8"
 
+HI_SCORE = "149972"   # top row of the high-score table: reviews classified by spotify-review-pipeline
 FULL_W = 846   # GitHub profile README content width at >=1280px viewports
 CARD_W = 418   # two per row: 2*418 + inline gap < 846
 
@@ -200,7 +201,7 @@ def build_header():
   <!-- arcade HUD -->
   {T("1UP", 9, 24, 28, PINK)}
   {T("HI-SCORE", 9, VX, 28, CYAN, "middle")}
-  {T("000608", 9, VX, 42, "#fff", "middle")}
+  {T(HI_SCORE, 9, VX, 42, "#fff", "middle")}
   {T("CREDIT 01", 9, W-24, 28, YELLOW, "end")}
 
   <!-- title: cyan extrude, dark outline, yellow outline, chrome fill -->
@@ -402,6 +403,128 @@ def build_button(name, label, color):
     write(f"btn-{name}.svg", svg)
 
 
+
+# ============================================================== PLAYER 1 CARD
+def build_bio(rows):
+    """Character-select style stat sheet: the bio as a dark panel instead of plain README text."""
+    W, size, lh, pad, vx = FULL_W, 11, 24, 22, 118
+    lines = []
+    for label, value, color in rows:
+        for i, part in enumerate(textwrap.wrap(value, 62)):
+            lines.append((label if i == 0 else "", part, color))
+    H = pad * 2 + lh * len(lines) - 6
+    out = []
+    for i, (label, part, color) in enumerate(lines):
+        y = pad + 12 + i * lh
+        if label:
+            out.append(T(label, size, 24, y, CYAN))
+        out.append(T(part, size, vx, y, color))
+    last_y = pad + 12 + (len(lines) - 1) * lh
+    cur_x = vx + text_width(lines[-1][1], size) + 6
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="Player 1 stat sheet">
+<defs>{scanlines_defs()}
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{BG2}"/><stop offset="1" stop-color="{BG}"/></linearGradient>
+</defs>
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="url(#bg)" stroke="{PURPLE}" stroke-width="3"/>
+<rect x="{vx - 14}" y="{pad - 4}" width="2" height="{H - pad * 2 + 8}" fill="{PURPLE}"/>
+{"".join(out)}
+<rect x="{cur_x:.0f}" y="{last_y - 11}" width="9" height="12" fill="{PINK_L}">{blink("0.8s")}</rect>
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="url(#scan)"/>
+</svg>"""
+    write("bio.svg", svg)
+
+
+# ================================================================ STAT CARDS
+def load_stats():
+    import json
+    return json.loads((HERE / "stats.json").read_text())
+
+
+def build_stats(st, live_deploys):
+    """Self-hosted replacement for the third-party stats card: numbers come from tools/stats.json."""
+    W, H = CARD_W, 228
+    months = "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split()
+    y0, m0 = st["joined"].split("-")
+    rows = [
+        ("PUBLIC REPOS", f'{st["public_repos"]:02d}'),
+        ("COMMITS", f'{st["commits"]:03d}'),
+        ("LIVE DEPLOYS", f"{live_deploys:02d}"),
+        ("PODCAST EPISODES", f'{st["podcast_episodes"]:02d}'),
+        ("JOINED", f"{months[int(m0) - 1]} {y0}"),
+    ]
+    out = [T("1UP STATS", 12, W / 2, 30, YELLOW, "middle")]
+    for i, (label, value) in enumerate(rows):
+        y = 64 + i * 26
+        out.append(f'<rect x="22" y="{y - 9}" width="8" height="8" fill="{[CYAN, PINK, MINT, ORANGE, YELLOW][i]}"/>')
+        out.append(T(label, 8, 40, y, LAV))
+        out.append(T(value, 8, W - 22, y, "#fff", "end"))
+        x0 = 40 + text_width(label, 8) + 8
+        x1 = W - 22 - text_width(value, 8) - 8
+        out.append(f'<line x1="{x0:.0f}" y1="{y - 2}" x2="{x1:.0f}" y2="{y - 2}" stroke="{PURPLE}" stroke-width="2" stroke-dasharray="2 4"/>')
+    out.append(T(f'SNAPSHOT {st["as_of"]}', 7, W / 2, H - 16, DIM, "middle"))
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="GitHub stats snapshot">
+<defs>{scanlines_defs()}</defs>
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="{BG}" stroke="{PINK}" stroke-width="3"/>
+{"".join(out)}
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="url(#scan)"/>
+</svg>"""
+    write("stats.svg", svg)
+
+
+def build_langs(st, top=5):
+    """Language share across public repos (bytes, as GitHub counts them), as one stacked bar."""
+    W, pad = FULL_W, 24
+    names = {"Jupyter Notebook": "JUPYTER"}
+    colors = [ORANGE, CYAN, PINK, MINT, YELLOW, LAV]
+    total = sum(st["languages"].values())
+    items = list(st["languages"].items())
+    shown = items[:top]
+    other = sum(v for _, v in items[top:])
+    if other:
+        shown.append(("Other", other))
+    bar, x = "", float(pad)
+    bw = W - pad * 2
+    for i, (_, v) in enumerate(shown):
+        w = bw * v / total
+        bar += f'<rect x="{x:.1f}" y="44" width="{max(w, 1):.1f}" height="14" fill="{colors[i % len(colors)]}"/>'
+        x += w
+    legend, lx, ly = "", pad, 84
+    for i, (k, v) in enumerate(shown):
+        label = f"{names.get(k, k.upper())} {100 * v / total:.1f}%"
+        lw = 16 + text_width(label, 8) + 22
+        if lx + lw > W - pad + 22:
+            lx, ly = pad, ly + 20
+        legend += f'<rect x="{lx}" y="{ly - 9}" width="9" height="9" fill="{colors[i % len(colors)]}"/>' + T(label, 8, lx + 16, ly, "#fff")
+        lx += lw
+    H = ly + 20
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="Languages by share of code in public repos">
+<defs>{scanlines_defs()}</defs>
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="{BG}" stroke="{PURPLE}" stroke-width="3"/>
+{T("MOST USED WEAPONS", 10, pad, 30, YELLOW)}
+{T("LANGUAGES BY SHARE OF CODE", 7, W - pad, 28, DIM, "end")}
+<rect x="{pad - 2}" y="42" width="{bw + 4}" height="18" fill="{BG2}"/>
+{bar}
+{legend}
+<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="8" fill="url(#scan)"/>
+</svg>"""
+    write("langs.svg", svg)
+
+
+def build_coin_button():
+    """The big call to action under the gameplay preview."""
+    a, b, size = "INSERT COIN", "PLAY VAPOR STRIKE", 12
+    wa, wb = text_width(a, size), text_width(b, size)
+    W, H = 30 + wa + 44 + wb + 30, 56
+    tri_x = 30 + wa + 16
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W:.0f}" height="{H}" viewBox="0 0 {W:.0f} {H}" role="img" aria-label="Insert coin: play Vapor Strike">
+<rect x="2" y="2" width="{W-4:.0f}" height="{H-4}" rx="10" fill="{BG}" stroke="{PINK}" stroke-width="4"/>
+<g>{blink("0.9s")}{T(a, size, 30, 35, YELLOW)}</g>
+<path d="M{tri_x:.0f} 19 L{tri_x + 14:.0f} 28 L{tri_x:.0f} 37 Z" fill="{CYAN}"/>
+{T(b, size, 30 + wa + 44, 35, "#fff")}
+</svg>"""
+    write("btn-coin.svg", svg)
+
+
 if __name__ == "__main__":
     build_header()
     build_banner("player1", "PLAYER 1", "WHO IS THIS")
@@ -409,6 +532,21 @@ if __name__ == "__main__":
     build_banner("scores", "HIGH SCORES", "STATS")
     build_banner("powerups", "POWER-UPS", "STACK")
     build_banner("continue", "CONTINUE?", "LINKS")
+    build_banner("bonus", "BONUS STAGE", "PLAYABLE")
+    build_bio([
+        ("PLAYER", "BRIAN AREVALO RAMOS", YELLOW),
+        ("CLASS", "MBA CANDIDATE @ UC BERKELEY HAAS", "#fff"),
+        ("QUEST", "BUILDING AGENTIC AI IN THE OPEN: AGENTS, TINY LLMS, LOCAL RAG, MULTI-AGENT PIPELINES", "#fff"),
+        ("STYLE", "REPRODUCIBLE OVER FLASHY. EVERY README LINKS TO THE FILE THAT PROVES THE NUMBER", "#fff"),
+        ("RIG", "INTEL MACBOOK PRO, CPU ONLY. NO GPU, NO EXCUSES", "#fff"),
+        ("OST", "FRANKJAVCEE, VAPORTRAP, SIMPSONWAVE AT 2 AM", "#fff"),
+    ])
+    _st = load_stats()
+    # live deploys: networking-tracker (Vercel), Spotify dashboard (Vercel), radar guide, podcast site, the arcade (GitHub Pages)
+    build_stats(_st, live_deploys=5)
+    build_langs(_st)
+    build_coin_button()
+    build_button("arcade", "ARCADE", MINT)
     build_card("pacman", "STAGE 01", "PACMAN-DQN",
                "Deep Q-Network trained to play Ms. Pac-Man. 500 games on a laptop CPU, mean score 492 to 608.",
                "PYTHON / PYTORCH")
@@ -424,14 +562,22 @@ if __name__ == "__main__":
     build_card("cohort", "STAGE 05", "BLUE-COHORT-DAILY",
                "A daily class-prep podcast for the Berkeley Haas Blue Cohort, published as a static site.",
                "HTML / AUDIO")
-    build_card("locked", "STAGE 06", "? ? ? ? ? ? ? ?",
+    build_card("spotify", "STAGE 06", "SPOTIFY-REVIEW-PIPELINE",
+               "Multi-agent LLM pipeline: 150k Spotify reviews in, one traceable product recommendation out. $6.30 of API spend.",
+               "PYTHON / CLAUDE API")
+    build_card("radar", "STAGE 07", "MBA-INTERNSHIP-RADAR",
+               "Free daily radar for MBA internships. About 165 company job boards plus your alerts, by email, iMessage or Sheet.",
+               "PYTHON / GITHUB ACTIONS")
+    build_card("locked", "STAGE 08", "? ? ? ? ? ? ? ?",
                "Two more stages are in private beta. Insert coin to unlock. (mission-to-fleet, internship-radar)",
                "SOON", locked=True)
     build_highscores([
-        ("1ST", "BRN", "000608", "MS. PAC-MAN DQN"),
-        ("2ND", "BRN", "000091", "NANOGPT EVALS %"),
-        ("3RD", "BRN", "000004", "LEDGER OFFLINE Q&A"),
-        ("4TH", "BRN", "000001", "RLS, ZERO LEAKS"),
+        ("1ST", "BRN", HI_SCORE, "REVIEWS CLASSIFIED"),
+        ("2ND", "BRN", "000608", "MS. PAC-MAN DQN"),
+        ("3RD", "BRN", "000165", "JOB BOARDS ON RADAR"),
+        ("4TH", "BRN", "000091", "NANOGPT EVALS %"),
+        ("5TH", "BRN", "000004", "LEDGER OFFLINE Q&A"),
+        ("6TH", "BRN", "000001", "RLS, ZERO LEAKS"),
         ("YOU", "???", "------", "INSERT COIN"),
     ])
     build_divider()
@@ -440,7 +586,7 @@ if __name__ == "__main__":
         ("PYTHON", CYAN), ("PYTORCH", PINK), ("JUPYTER", ORANGE), ("NANOGPT", MINT),
         ("GYMNASIUM / ALE", YELLOW), ("OLLAMA", CYAN), ("TYPESCRIPT", PINK), ("NEXT.JS", "#fff"),
         ("POSTGRES + RLS", CYAN), ("BETTER AUTH", MINT), ("VERCEL", "#fff"), ("PLAYWRIGHT", ORANGE),
-        ("CLAUDE CODE", PINK_L), ("GIT", YELLOW),
+        ("CLAUDE CODE", PINK_L), ("CLAUDE API", PINK), ("FASTAPI", MINT), ("GITHUB ACTIONS", CYAN), ("GIT", YELLOW),
     ])
     build_button("linkedin", "LINKEDIN", CYAN)
     build_button("github", "GITHUB", PINK)

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VAPOR STRIKE · BuildingBrian Arcade</title>
+<meta name="description" content="A 90s arcade Apache shooter. Insert coin, fly the gunship: 30mm chain gun, rockets and Hellfires over a neon grid.">
+<meta property="og:title" content="VAPOR STRIKE · BuildingBrian Arcade">
+<meta property="og:description" content="Insert coin. Fly the Apache. 30mm, rockets and Hellfires over a neon grid.">
+<meta property="og:image" content="https://buildingbrian.github.io/BuildingBrian/img/card.png">
+<meta name="theme-color" content="#0d0221">
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="preload" href="fonts/PressStart2P-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="cabinet">
+  <header class="marquee">
+    <a class="back" href="https://github.com/BuildingBrian">&#9664; BACK TO GITHUB</a>
+    <h1>VAPOR STRIKE</h1>
+    <p>A BUILDINGBRIAN ARCADE GAME</p>
+  </header>
+
+  <section class="bezel" id="bezel">
+    <canvas id="screen" width="480" height="270" tabindex="0" aria-label="Vapor Strike game screen. Press any key to insert a coin."></canvas>
+    <div class="crt" aria-hidden="true"></div>
+    <div class="touch" id="touch" hidden>
+      <div class="stick" id="stick"><i id="knob"></i></div>
+      <button class="tb hf" id="tb-hf" aria-label="Fire Hellfire">HF</button>
+      <button class="tb rk" id="tb-rk" aria-label="Fire rockets">RKT</button>
+    </div>
+  </section>
+
+  <p class="rotate">ROTATE YOUR PHONE FOR A BIGGER SCREEN</p>
+
+  <section class="panel">
+    <button class="coin" id="coin" aria-label="Insert coin">
+      <img src="img/token-256.png" width="72" height="72" alt="">
+      <span>INSERT COIN</span>
+    </button>
+    <ul class="keys" aria-label="Controls">
+      <li><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> <b>FLY</b></li>
+      <li><kbd>Z</kbd> <b class="c1">30MM</b></li>
+      <li><kbd>X</kbd> <b class="c2">ROCKETS</b></li>
+      <li><kbd>C</kbd> <b class="c3">HELLFIRE</b></li>
+      <li><kbd>ENTER</kbd> <b>START</b></li>
+      <li><kbd>P</kbd> <b>PAUSE</b></li>
+    </ul>
+    <div class="toggles">
+      <button id="mute" aria-pressed="false">SOUND ON</button>
+      <button id="full">FULL SCREEN</button>
+    </div>
+  </section>
+
+  <footer>
+    <span>(C) 2026 BUILDINGBRIAN ENT.</span>
+    <span>1 TOKEN &middot; 1 GAME &middot; NO CASH VALUE</span>
+    <a href="https://github.com/BuildingBrian/BuildingBrian/tree/main/docs">SOURCE</a>
+  </footer>
+</main>
+
+<div hidden>
+  <img id="spr-apache" src="sprites/apache.png" alt="">
+  <img id="spr-heli" src="sprites/heli.png" alt="">
+  <img id="spr-tank" src="sprites/tank.png" alt="">
+  <img id="spr-sam" src="sprites/sam.png" alt="">
+  <img id="spr-bunker" src="sprites/bunker.png" alt="">
+  <img id="spr-jet" src="sprites/jet.png" alt="">
+  <img id="spr-mine" src="sprites/mine.png" alt="">
+  <img id="spr-boss" src="sprites/boss.png" alt="">
+</div>
+<script src="vs.js"></script>
+</body>
+</html>
